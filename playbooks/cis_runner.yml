@@ -4,23 +4,17 @@
   become: true
   gather_facts: true
 
-  vars:
-    # Defaults can be overridden by AWX Survey or Job Template Extra Variables.
-    cis_selection_mode: "{{ cis_selection_mode | default('all') }}"
-    cis_action: "{{ cis_action | default('assessment') }}"
-
   pre_tasks:
     - name: Validate required benchmark configuration
       ansible.builtin.assert:
         that:
           - cis_benchmark is defined
           - cis_expected_release is defined
-          - cis_benchmark in
-            - 'ubuntu_2204_v3'
-            - 'ubuntu_2404_v2'
+          - cis_benchmark in ['ubuntu_2204_v3', 'ubuntu_2404_v2']
         fail_msg: >-
-          Invalid CIS configuration. Define cis_benchmark and
-          cis_expected_release in the AWX Job Template.
+          Invalid CIS configuration. Define a valid cis_benchmark
+          and cis_expected_release in the AWX Job Template or group_vars.
+      changed_when: false
 
     - name: Validate target operating system
       ansible.builtin.assert:
