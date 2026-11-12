@@ -5,13 +5,34 @@
     cis_catalog_data: "{{ lookup('ansible.builtin.file', cis_catalog_file) | from_yaml }}"
   changed_when: false
 
-# The catalog currently contains an empty controls list. Discovering files
-# directly allows the engine to run while the catalog is being populated.
-- name: Discover control YAML files
-  ansible.builtin.set_fact:
-    cis_control_file_list: "{{ query('ansible.builtin.fileglob', cis_controls_dir ~ '/section_*/*.yml') | sort }}"
+- name: Discover control YAML files on Ansible Controller
+  ansible.builtin.find:
+    paths: "{{ cis_controls_dir }}"
+    patterns:
+      - "*.yml"
+    recurse: true
+    file_type: file
+  delegate_to: localhost
+  become: false
+  register: cis_control_discovery
   changed_when: false
 
+- name: Build control file list
+  ansible.builtin.set_fact:
+    cis_control_file_list: >-
+      {{ cis_control_discovery.files
+         | map(attribute='path')
+         | sort
+         | list }}
+  changed_when: false
+
+- name: Display discovered control files
+  ansible.builtin.debug:
+    msg:
+      - "Control directory: {{ cis_controls_dir }}"
+      - "Discovered files: {{ cis_control_file_list | length }}"
+      - "{{ cis_control_file_list }}"
+      
 - name: Load control YAML definitions
   ansible.builtin.set_fact:
     cis_control_objects: "{{ cis_control_objects + [ {
