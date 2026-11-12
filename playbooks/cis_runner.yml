@@ -4,6 +4,18 @@
   become: true
   gather_facts: true
 
+  vars:
+    cis_benchmark_dir: "{{ playbook_dir }}/../benchmarks/{{ cis_benchmark }}"
+    cis_benchmark_file: "{{ cis_benchmark_dir }}/benchmark.yml"
+    cis_catalog_file: "{{ cis_benchmark_dir }}/catalog.yml"
+    cis_controls_dir: "{{ cis_benchmark_dir }}/controls"
+
+    cis_exceptions_file: >-
+      {{ playbook_dir }}/../exceptions/{{
+        'ubuntu_2204.yml' if cis_benchmark == 'ubuntu_2204_v3'
+        else 'ubuntu_2404.yml'
+      }}
+
   pre_tasks:
     - name: Validate required benchmark configuration
       ansible.builtin.assert:
