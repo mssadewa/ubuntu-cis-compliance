@@ -1,0 +1,137 @@
+---
+# ============================================================
+# CIS Control Catalog
+# Ubuntu 22.04 LTS
+# CIS Benchmark v3.0.0
+# ============================================================
+
+schema_version: "1.0"
+
+catalog:
+  id: "ubuntu_2204_v3"
+  name: "CIS Ubuntu Linux 22.04 LTS Benchmark"
+  benchmark_version: "3.0.0"
+  operating_system: "Ubuntu"
+  operating_system_release: "22.04"
+  status: "draft"
+
+# ------------------------------------------------------------
+# Catalog Metadata
+# ------------------------------------------------------------
+
+metadata:
+  publisher: "Center for Internet Security"
+  catalog_format: "cis-control-catalog"
+  control_file_extension: ".yml"
+  control_file_pattern: "{control_id}.yml"
+
+  control_directory: "controls"
+
+  # Populate after importing and validating the official
+  # benchmark recommendations.
+  total_controls: null
+
+# ------------------------------------------------------------
+# Supported Profiles
+# ------------------------------------------------------------
+
+profiles:
+  - id: "level1_server"
+    name: "Level 1 - Server"
+    level: 1
+    type: "server"
+
+  - id: "level1_workstation"
+    name: "Level 1 - Workstation"
+    level: 1
+    type: "workstation"
+
+  - id: "level2_server"
+    name: "Level 2 - Server"
+    level: 2
+    type: "server"
+
+  - id: "level2_workstation"
+    name: "Level 2 - Workstation"
+    level: 2
+    type: "workstation"
+
+# ------------------------------------------------------------
+# Control Classification
+# ------------------------------------------------------------
+
+classification:
+  levels:
+    - "L1"
+    - "L2"
+
+  types:
+    - "Automated"
+    - "Manual"
+
+  applicability:
+    - "Server"
+    - "Workstation"
+
+# ------------------------------------------------------------
+# Section Definitions
+#
+# Populate these from the official CIS Benchmark v3.0.0.
+# Each section ID must match the actual benchmark hierarchy.
+# ------------------------------------------------------------
+
+sections: []
+
+# ------------------------------------------------------------
+# Control Index
+#
+# Each entry represents one CIS recommendation.
+#
+# Example schema:
+#
+# - id: "1.1.1.1"
+#   title: "Ensure cramfs kernel module isn't available"
+#   section: "1.1.1"
+#   section_title: "Configure Filesystem Kernel Modules"
+#   level: "L1"
+#   type: "Automated"
+#   profiles:
+#     - "level1_server"
+#     - "level1_workstation"
+#   file: "section_1/1.1.1.1.yml"
+#   enabled: true
+#
+# ------------------------------------------------------------
+
+controls: []
+
+# ------------------------------------------------------------
+# Catalog Validation
+# ------------------------------------------------------------
+
+validation:
+  require_unique_control_ids: true
+  require_control_title: true
+  require_valid_profile: true
+  require_control_file: true
+  require_valid_section: true
+  require_valid_level: true
+  require_valid_type: true
+
+  allowed_levels:
+    - "L1"
+    - "L2"
+
+  allowed_types:
+    - "Automated"
+    - "Manual"
+
+# ------------------------------------------------------------
+# Source Reference
+# ------------------------------------------------------------
+
+source:
+  publisher: "CIS"
+  benchmark: "CIS Ubuntu Linux 22.04 LTS Benchmark"
+  version: "3.0.0"
+  official_url: "https://www.cisecurity.org/cis-benchmarks"

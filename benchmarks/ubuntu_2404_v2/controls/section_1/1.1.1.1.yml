@@ -1,0 +1,91 @@
+schema_version: '1.0'
+control:
+  id: 1.1.1.1
+  title: Ensure cramfs kernel module is not available
+  benchmark: ubuntu_2404_v2
+  benchmark_version: 2.0.0
+  section: 1.1.1
+  section_title: Configure Filesystem Kernel Modules
+  assessment_type: Automated
+  profiles:
+  - level1_server
+  - level1_workstation
+  level: 1
+  enabled: true
+  source_page: 23
+description: The cramfs filesystem type is a compressed read-only Linux filesystem embedded in small footprint systems.
+  A cramfs image can be used without having to first decompress the image.
+rationale: Removing support for unneeded filesystem types reduces the local attack surface of the system. If the
+  filesystem type is not needed, disable it.
+impact: null
+implementation:
+  module:
+    filesystem_module_name: cramfs
+    modprobe_module_name: cramfs
+    module_directory: fs
+  assessment:
+    mode: automated
+    shell: /bin/bash
+    script: "#!/usr/bin/env bash\nset -uo pipefail\n\nPATH_NAME=\"cramfs\"\nMODULE_TYPE=\"fs\"\nCONFIG_MODULE=\"\
+      cramfs\"\n\n# CIS treats a module that is not available as a loadable module as compliant.\nMODULE_FOUND=0\n\
+      for module_root in /usr/lib/modules /lib/modules; do\n    [[ -d \"$module_root\" ]] || continue\n    while\
+      \ IFS= read -r module_dir; do\n        candidate=\"$module_dir/$PATH_NAME\"\n        [[ -d \"$candidate\"\
+      \ ]] || continue\n        if find \"$candidate\" -maxdepth 1 -type f -print -quit 2>/dev/null | grep -q .;\
+      \ then\n            MODULE_FOUND=1\n            break\n        fi\n    done < <(find \"$module_root\" -path\
+      \ \"*/kernel/$MODULE_TYPE\" -type d -print 2>/dev/null)\n    [[ \"$MODULE_FOUND\" -eq 1 ]] && break\ndone\n\
+      \nif [[ \"$MODULE_FOUND\" -eq 0 ]]; then\n    echo \"CIS_RESULT=PASS\"\n    echo \"EVIDENCE=Module is not\
+      \ available as a loadable module.\"\n    exit 0\nfi\n\nFAIL=0\nif lsmod | awk 'NR>1 {print $1}' | grep -Fxq\
+      \ \"$CONFIG_MODULE\"; then\n    echo \"EVIDENCE=Module is currently loaded: $CONFIG_MODULE\"\n    FAIL=1\n\
+      else\n    echo \"EVIDENCE=Module is not loaded.\"\nfi\n\nCONFIG=\"$(modprobe --showconfig 2>/dev/null || true)\"\
+      \nif ! grep -Piq -- \"^\\h*blacklist\\h+${CONFIG_MODULE}\\b\" <<< \"$CONFIG\"; then\n    echo \"EVIDENCE=Missing\
+      \ blacklist directive for $CONFIG_MODULE.\"\n    FAIL=1\nelse\n    echo \"EVIDENCE=Blacklist directive found.\"\
+      \nfi\n\nif ! grep -Piq -- \"^\\h*install\\h+${CONFIG_MODULE}\\h+(\\S*/)?bin/(false|true)\\b\" <<< \"$CONFIG\"\
+      ; then\n    echo \"EVIDENCE=Missing install directive mapping $CONFIG_MODULE to /bin/false or /bin/true.\"\
+      \n    FAIL=1\nelse\n    echo \"EVIDENCE=Install directive found.\"\nfi\n\nif [[ \"$FAIL\" -eq 0 ]]; then\n\
+      \    echo \"CIS_RESULT=PASS\"\n    exit 0\nelse\n    echo \"CIS_RESULT=FAIL\"\n    exit 1\nfi\n"
+    success_exit_code: 0
+    failure_exit_code: 1
+    result_marker: CIS_RESULT
+  remediation:
+    supported: true
+    mode: automated
+    requires_approval: false
+    script: '#!/usr/bin/env bash
+
+      set -euo pipefail
+
+
+      MODULE="cramfs"
+
+      CONFIG_MODULE="cramfs"
+
+      CONF_FILE="/etc/modprobe.d/60-1-1-1-1-cramfs.conf"
+
+
+      # Attempt to unload the module as specified by the CIS remediation.
+
+      modprobe -r "$MODULE" 2>/dev/null || true
+
+      rmmod "$MODULE" 2>/dev/null || true
+
+
+      # Add explicit deny-list and install directives without overwriting other files.
+
+      cat > "$CONF_FILE" <<EOF
+
+      install $CONFIG_MODULE /bin/false
+
+      blacklist $CONFIG_MODULE
+
+      EOF
+
+
+      chmod 0644 "$CONF_FILE"
+
+      echo "REMEDIATION=APPLIED"
+
+      echo "CONFIG_FILE=$CONF_FILE"
+
+      '
+    reboot_required: false
+    verification_required: true

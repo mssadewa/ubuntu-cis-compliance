@@ -1,0 +1,55 @@
+schema_version: '1.0'
+control:
+  id: 1.1.1.11
+  title: Ensure unused filesystems kernel modules are not available
+  benchmark: ubuntu_2404_v2
+  benchmark_version: 2.0.0
+  section: 1.1.1
+  section_title: Configure Filesystem Kernel Modules
+  assessment_type: Manual
+  profiles:
+  - level1_server
+  - level1_workstation
+  level: 1
+  enabled: true
+  source_page: 54
+description: Filesystem kernel modules extend the filesystem capabilities of the Linux kernel. Loadable filesystem
+  modules may be abused by attackers or rootkits. Disable modules that are not required, after reviewing dependencies
+  and local policy.
+rationale: Removing support for unneeded filesystem types reduces the local attack surface. Unneeded loadable filesystem
+  modules may also be abused by attackers or rootkits.
+impact: The list may be extensive. Carefully review dependencies before changing filesystem kernel module configurations.
+  Disabling modules that are in use may be fatal.
+implementation:
+  assessment:
+    mode: manual
+    automated_execution: false
+    procedure:
+    - 'List currently mounted filesystem types: findmnt -Dkerno fstype | sort -u'
+    - Enumerate installed filesystem kernel modules under /usr/lib/modules/<KERNEL_VERSION>/kernel/fs/ or /lib/modules/<KERNEL_VERSION>/kernel/fs/,
+      excluding the nls directory.
+    - List loaded modules with lsmod and compare the results with installed filesystem modules.
+    - Review modprobe --showconfig | grep -Pi -- '^\h*(blacklist|install)\h+' for blacklist and install directives.
+    - Identify filesystem modules that are unused, not mounted, not loaded, and not required by applications or
+      local policy.
+    - Do not disable modules that are in use or required by the operating system or workloads.
+    evidence_commands:
+    - findmnt -Dkerno fstype | sort -u
+    - lsmod
+    - modprobe --showconfig | grep -Pi -- '^\h*(blacklist|install)\h+'
+    result_values:
+    - PASS
+    - FAIL
+    - NOT_APPLICABLE
+    - MANUAL_REVIEW_REQUIRED
+  remediation:
+    supported: false
+    mode: manual
+    requires_approval: true
+    reason: CIS requires a site-specific review of mounted filesystems, loaded modules, dependencies, and local
+      policy. Blanket automated remediation may make the system unusable.
+    procedure:
+    - For each confirmed unused module, unload it using modprobe -r <module> and rmmod <module> as appropriate.
+    - Create a dedicated .conf file under /etc/modprobe.d/ containing blacklist <module> and install <module> /bin/false.
+    - Re-run the assessment and verify that required filesystems and applications continue to function.
+    reboot_required: Depends on module and workload

@@ -1,0 +1,121 @@
+---
+# ============================================================
+# CIS Control Catalog
+# Ubuntu 24.04 LTS
+# CIS Benchmark v2.0.0
+# ============================================================
+
+schema_version: "1.0"
+
+catalog:
+  id: "ubuntu_2404_v2"
+  name: "CIS Ubuntu Linux 24.04 LTS Benchmark"
+  benchmark_version: "2.0.0"
+  operating_system: "Ubuntu"
+  operating_system_release: "24.04"
+  status: "draft"
+
+# ------------------------------------------------------------
+# Catalog Metadata
+# ------------------------------------------------------------
+
+metadata:
+  publisher: "Center for Internet Security"
+  catalog_format: "cis-control-catalog"
+  control_file_extension: ".yml"
+  control_file_pattern: "{control_id}.yml"
+
+  control_directory: "controls"
+
+  total_controls: null
+
+# ------------------------------------------------------------
+# Supported Profiles
+# ------------------------------------------------------------
+
+profiles:
+  - id: "level1_server"
+    name: "Level 1 - Server"
+    level: 1
+    type: "server"
+
+  - id: "level1_workstation"
+    name: "Level 1 - Workstation"
+    level: 1
+    type: "workstation"
+
+  - id: "level2_server"
+    name: "Level 2 - Server"
+    level: 2
+    type: "server"
+
+  - id: "level2_workstation"
+    name: "Level 2 - Workstation"
+    level: 2
+    type: "workstation"
+
+# ------------------------------------------------------------
+# Control Classification
+# ------------------------------------------------------------
+
+classification:
+  levels:
+    - "L1"
+    - "L2"
+
+  types:
+    - "Automated"
+    - "Manual"
+
+  applicability:
+    - "Server"
+    - "Workstation"
+
+# ------------------------------------------------------------
+# Section Definitions
+#
+# Populate these from the official CIS Benchmark v2.0.0.
+# Ubuntu 24.04 v2 has a revised section structure.
+# Do not copy the Ubuntu 22.04 section hierarchy.
+# ------------------------------------------------------------
+
+sections: []
+
+# ------------------------------------------------------------
+# Control Index
+#
+# Each entry represents one CIS recommendation.
+# ------------------------------------------------------------
+
+controls: []
+
+# ------------------------------------------------------------
+# Catalog Validation
+# ------------------------------------------------------------
+
+validation:
+  require_unique_control_ids: true
+  require_control_title: true
+  require_valid_profile: true
+  require_control_file: true
+  require_valid_section: true
+  require_valid_level: true
+  require_valid_type: true
+
+  allowed_levels:
+    - "L1"
+    - "L2"
+
+  allowed_types:
+    - "Automated"
+    - "Manual"
+
+# ------------------------------------------------------------
+# Source Reference
+# ------------------------------------------------------------
+
+source:
+  publisher: "CIS"
+  benchmark: "CIS Ubuntu Linux 24.04 LTS Benchmark"
+  version: "2.0.0"
+  official_url: "https://www.cisecurity.org/cis-benchmarks"

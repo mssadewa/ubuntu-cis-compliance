@@ -1,0 +1,55 @@
+schema_version: '1.0'
+control:
+  id: 1.1.1.10
+  title: Ensure unused filesystems kernel modules are not available
+  benchmark: ubuntu_2204_v3
+  benchmark_version: 3.0.0
+  section: 1.1.1
+  section_title: Configure Filesystem Kernel Modules
+  assessment_type: Manual
+  profiles:
+  - level1_server
+  - level1_workstation
+  level: 1
+  enabled: true
+  source_page: 51
+description: Filesystem kernel modules extend the filesystem capabilities of the Linux kernel and may be abused
+  by attackers or rootkits. Disable filesystem modules that are not required, after reviewing dependencies and local
+  policy.
+rationale: Removing support for unneeded filesystem types reduces the local attack surface. Unneeded loadable filesystem
+  modules may also be abused by attackers or rootkits.
+impact: The list can be extensive. Carefully review dependencies before changing filesystem kernel module configurations.
+  Disabling modules in use may be fatal.
+implementation:
+  assessment:
+    mode: manual
+    automated_execution: false
+    procedure:
+    - 'Generate the list of mounted filesystem types with: findmnt -Dkerno fstype | sort -u'
+    - Review installed filesystem modules under /usr/lib/modules/<KERNEL_VERSION>/kernel/fs/ or /lib/modules/<KERNEL_VERSION>/kernel/fs/;
+      exclude the nls directory.
+    - Compare installed filesystem modules with mounted filesystem types and lsmod output. Review every loaded or
+      mounted filesystem module for business need and site-policy approval.
+    - Review modprobe --showconfig output. Every unused filesystem module must have both a blacklist directive and
+      an install directive mapping it to /bin/false or /bin/true.
+    - Do not disable modules that are mounted, loaded, required by applications, or otherwise needed by the system.
+    evidence_commands:
+    - findmnt -Dkerno fstype | sort -u
+    - lsmod
+    - modprobe --showconfig | grep -Pi -- '^\h*(blacklist|install)\h+'
+    result_values:
+    - PASS
+    - FAIL
+    - NOT_APPLICABLE
+    - MANUAL_REVIEW_REQUIRED
+  remediation:
+    supported: false
+    mode: manual
+    requires_approval: true
+    reason: The benchmark requires site-specific review of mounted filesystems, loaded modules, dependencies, and
+      local policy. Blanket automated remediation could make the system unusable.
+    procedure:
+    - For each reviewed unused filesystem module, unload it with modprobe -r <module> and rmmod <module> as appropriate.
+    - 'Create a dedicated .conf file in /etc/modprobe.d/ containing: blacklist <module> and install <module> /bin/false.'
+    - Re-run the audit and verify that required filesystems and applications continue to function.
+    reboot_required: Depends on module and workload

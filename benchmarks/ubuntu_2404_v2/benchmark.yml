@@ -1,0 +1,131 @@
+---
+# ============================================================
+# CIS Benchmark Metadata
+# Ubuntu 24.04 LTS
+# ============================================================
+
+schema_version: "1.0"
+
+benchmark:
+  id: "ubuntu_2404_v2"
+
+  name: "CIS Ubuntu Linux 24.04 LTS Benchmark"
+
+  version: "2.0.0"
+
+  version_label: "v2"
+
+  publisher: "Center for Internet Security"
+
+  benchmark_type: "CIS Benchmark"
+
+  status: "active"
+
+# ------------------------------------------------------------
+# Target Operating System
+# ------------------------------------------------------------
+
+operating_system:
+  distribution: "Ubuntu"
+
+  release: "24.04"
+
+  release_name: "Noble Numbat"
+
+  supported_releases:
+    - "24.04"
+
+# ------------------------------------------------------------
+# Applicable Profiles
+# ------------------------------------------------------------
+
+profiles:
+  - id: "level1_server"
+    name: "Level 1 - Server"
+    level: 1
+    type: "server"
+    default: true
+
+  - id: "level1_workstation"
+    name: "Level 1 - Workstation"
+    level: 1
+    type: "workstation"
+    default: false
+
+  - id: "level2_server"
+    name: "Level 2 - Server"
+    level: 2
+    type: "server"
+    default: false
+
+  - id: "level2_workstation"
+    name: "Level 2 - Workstation"
+    level: 2
+    type: "workstation"
+    default: false
+
+# ------------------------------------------------------------
+# Control Repository
+# ------------------------------------------------------------
+
+controls:
+  catalog_file: "catalog.yml"
+
+  directory: "controls"
+
+  file_extension: ".yml"
+
+  naming_convention: "{control_id}.yml"
+
+# ------------------------------------------------------------
+# Execution Configuration
+# ------------------------------------------------------------
+
+execution:
+  supported_actions:
+    - "assessment"
+    - "remediation"
+    - "assessment_remediation"
+
+  supported_selection_modes:
+    - "all"
+    - "exact"
+    - "subtree"
+
+  continue_on_control_failure: true
+
+  verify_after_remediation: true
+
+# ------------------------------------------------------------
+# Reporting Configuration
+# ------------------------------------------------------------
+
+reporting:
+  supported_statuses:
+    - "PASS"
+    - "FAIL"
+    - "NOT_APPLICABLE"
+    - "EXCEPTION"
+    - "ERROR"
+    - "NOT_ASSESSED"
+
+  include_control_id: true
+  include_control_title: true
+  include_profile: true
+  include_assessment_result: true
+  include_remediation_result: true
+  include_evidence: true
+  include_exception_reason: true
+
+# ------------------------------------------------------------
+# Benchmark Reference
+# ------------------------------------------------------------
+
+reference:
+  publisher: "CIS"
+
+  document: "CIS Ubuntu Linux 24.04 LTS Benchmark"
+
+  version: "2.0.0"
+
+  official_website: "https://www.cisecurity.org/cis-benchmarks"

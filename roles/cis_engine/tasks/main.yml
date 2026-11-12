@@ -1,0 +1,77 @@
+---
+# ============================================================
+# CIS Ubuntu Compliance Engine
+# Main Task Orchestrator
+# ============================================================
+
+- name: CIS Engine | Display execution information
+  ansible.builtin.debug:
+    msg:
+      - "=============================================="
+      - " CIS Ubuntu Compliance Engine"
+      - "=============================================="
+      - "Hostname          : {{ inventory_hostname }}"
+      - "OS                : {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}"
+      - "Benchmark         : {{ cis_benchmark }}"
+      - "Benchmark Version : {{ cis_benchmark_version }}"
+      - "Selection Mode    : {{ cis_selection_mode }}"
+      - "Target            : {{ cis_target | default('ALL') }}"
+      - "Action            : {{ cis_action }}"
+      - "=============================================="
+
+# ------------------------------------------------------------
+# STEP 1: Validate Inputs
+# ------------------------------------------------------------
+
+- name: CIS Engine | Validate execution inputs
+  ansible.builtin.import_tasks: validate_inputs.yml
+
+# ------------------------------------------------------------
+# STEP 2: Load Benchmark Catalog
+# ------------------------------------------------------------
+
+- name: CIS Engine | Load benchmark catalog
+  ansible.builtin.import_tasks: load_catalog.yml
+
+# ------------------------------------------------------------
+# STEP 3: Select Controls
+# ------------------------------------------------------------
+
+- name: CIS Engine | Select applicable controls
+  ansible.builtin.import_tasks: select_controls.yml
+
+# ------------------------------------------------------------
+# STEP 4: Validate Exceptions
+# ------------------------------------------------------------
+
+- name: CIS Engine | Validate control exceptions
+  ansible.builtin.import_tasks: validate_exceptions.yml
+
+# ------------------------------------------------------------
+# STEP 5: Execute Assessment / Remediation
+# ------------------------------------------------------------
+
+- name: CIS Engine | Execute selected controls
+  ansible.builtin.import_tasks: execute_controls.yml
+
+# ------------------------------------------------------------
+# STEP 6: Finalize Results
+# ------------------------------------------------------------
+
+- name: CIS Engine | Finalize compliance results
+  ansible.builtin.import_tasks: finalize_results.yml
+
+# ------------------------------------------------------------
+# END
+# ------------------------------------------------------------
+
+- name: CIS Engine | Execution completed
+  ansible.builtin.debug:
+    msg:
+      - "=============================================="
+      - " CIS execution completed"
+      - "=============================================="
+      - "Hostname : {{ inventory_hostname }}"
+      - "Benchmark: {{ cis_benchmark }}"
+      - "Action   : {{ cis_action }}"
+      - "=============================================="

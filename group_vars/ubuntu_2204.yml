@@ -1,0 +1,88 @@
+---
+# ============================================================
+# CIS Ubuntu Compliance Configuration
+# Target: Ubuntu 22.04 LTS
+# Benchmark: CIS Ubuntu Linux 22.04 LTS Benchmark v3
+# ============================================================
+
+# ------------------------------------------------------------
+# Operating System Validation
+# ------------------------------------------------------------
+
+cis_expected_distribution: "Ubuntu"
+cis_expected_release: "22.04"
+
+# ------------------------------------------------------------
+# Benchmark Configuration
+# ------------------------------------------------------------
+
+cis_benchmark: "ubuntu_2204_v3"
+
+cis_benchmark_name: "CIS Ubuntu Linux 22.04 LTS Benchmark"
+
+cis_benchmark_version: "v3"
+
+cis_benchmark_dir: "benchmarks/ubuntu_2204_v3"
+
+cis_benchmark_file: "{{ playbook_dir }}/../{{ cis_benchmark_dir }}/benchmark.yml"
+
+cis_catalog_file: "{{ playbook_dir }}/../{{ cis_benchmark_dir }}/catalog.yml"
+
+cis_controls_dir: "{{ playbook_dir }}/../{{ cis_benchmark_dir }}/controls"
+
+# ------------------------------------------------------------
+# Exceptions
+# ------------------------------------------------------------
+
+cis_exceptions_enabled: true
+
+cis_exceptions_file: "{{ playbook_dir }}/../exceptions/ubuntu_2204.yml"
+
+# ------------------------------------------------------------
+# Execution Defaults
+# ------------------------------------------------------------
+
+# Supported:
+#   all      = Execute all controls
+#   exact    = Execute one specific control
+#   subtree  = Execute a control and its descendants
+
+cis_selection_mode: "all"
+
+# Supported:
+#   assessment
+#   remediation
+#   assessment_remediation
+
+cis_action: "assessment"
+
+# Used when selection_mode is exact or subtree.
+# Example: "1.1.1"
+cis_target: ""
+
+# ------------------------------------------------------------
+# Assessment Configuration
+# ------------------------------------------------------------
+
+cis_assessment_enabled: true
+
+cis_remediation_enabled: false
+
+# ------------------------------------------------------------
+# Reporting Configuration
+# ------------------------------------------------------------
+
+cis_reporting_enabled: true
+
+cis_report_format: "json"
+
+cis_report_dir: "/var/log/cis-compliance"
+
+cis_report_filename: "cis_ubuntu_2204_report.json"
+
+# ------------------------------------------------------------
+# Execution Metadata
+# ------------------------------------------------------------
+
+cis_execution_platform: "AWX"
+cis_operating_system: "Ubuntu 22.04 LTS"

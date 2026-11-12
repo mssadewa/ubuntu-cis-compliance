@@ -1,0 +1,64 @@
+---
+- name: CIS Ubuntu Compliance Runner
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    # Defaults can be overridden by AWX Survey or Job Template Extra Variables.
+    cis_selection_mode: "{{ cis_selection_mode | default('all') }}"
+    cis_action: "{{ cis_action | default('assessment') }}"
+
+  pre_tasks:
+    - name: Validate required benchmark configuration
+      ansible.builtin.assert:
+        that:
+          - cis_benchmark is defined
+          - cis_expected_release is defined
+          - cis_benchmark in
+            - 'ubuntu_2204_v3'
+            - 'ubuntu_2404_v2'
+        fail_msg: >-
+          Invalid CIS configuration. Define cis_benchmark and
+          cis_expected_release in the AWX Job Template.
+
+    - name: Validate target operating system
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.distribution == 'Ubuntu'
+          - >-
+            ansible_facts.distribution_version is
+            match('^' ~ (cis_expected_release | regex_escape) ~ '(\.|$)')
+        fail_msg: >-
+          OS mismatch on {{ inventory_hostname }}.
+          Expected Ubuntu {{ cis_expected_release }},
+          detected {{ ansible_facts.distribution }}
+          {{ ansible_facts.distribution_version }}.
+        success_msg: >-
+          OS validation passed:
+          {{ ansible_facts.distribution }}
+          {{ ansible_facts.distribution_version }}.
+
+    - name: Validate CIS execution mode
+      ansible.builtin.assert:
+        that:
+          - cis_selection_mode in ['exact', 'subtree', 'all']
+          - cis_action in
+            - ['assessment', 'remediation', 'assessment_remediation']
+        fail_msg: >-
+          Invalid execution configuration.
+          selection_mode must be exact, subtree, or all.
+          action must be assessment, remediation,
+          or assessment_remediation.
+
+    - name: Validate target control selection
+      ansible.builtin.assert:
+        that:
+          - cis_target is defined
+          - cis_target | length > 0
+        fail_msg: >-
+          cis_target is required when selection mode is exact or subtree.
+      when: cis_selection_mode in ['exact', 'subtree']
+
+  roles:
+    - role: cis_engine
