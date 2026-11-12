@@ -1,0 +1,33 @@
+---
+- name: Select enabled controls matching profile and selection
+  ansible.builtin.set_fact:
+    cis_selected_controls: "{{ cis_selected_controls + [ item ] }}"
+  loop: "{{ cis_control_objects }}"
+  loop_control:
+    label: "{{ item.data.control.id }} - {{ item.data.control.title }}"
+  vars:
+    _control_id: "{{ item.data.control.id | string }}"
+    _target_id: "{{ cis_target | default('') | string }}"
+    _profiles: "{{ item.data.control.profiles | default([]) }}"
+  when:
+    - item.data.control.enabled | default(true) | bool
+    - cis_profile | default('level1_server') in _profiles
+    - >-
+      (cis_selection_mode | default('all') == 'all')
+      or
+      (cis_selection_mode | default('all') == 'exact' and _control_id == _target_id)
+      or
+      (cis_selection_mode | default('all') == 'subtree' and
+       (_control_id == _target_id or _control_id.startswith(_target_id ~ '.')))
+  changed_when: false
+
+- name: Require at least one selected control
+  ansible.builtin.assert:
+    that:
+      - cis_selected_controls | length > 0
+    fail_msg: >-
+      No controls matched benchmark {{ cis_benchmark }}, profile
+      {{ cis_profile | default('level1_server') }}, selection
+      {{ cis_selection_mode | default('all') }}, target {{ cis_target | default('ALL') }}.
+      Check control profile applicability and selection inputs.
+  changed_when: false

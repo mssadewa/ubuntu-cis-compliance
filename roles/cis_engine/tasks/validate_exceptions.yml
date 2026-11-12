@@ -1,0 +1,68 @@
+---
+- name: Initialize empty exception list
+  ansible.builtin.set_fact:
+    cis_exception_objects: []
+  changed_when: false
+
+- name: Check exception file on controller
+  ansible.builtin.stat:
+    path: "{{ cis_exceptions_file }}"
+  delegate_to: localhost
+  become: false
+  register: cis_exception_file_stat
+  changed_when: false
+  when:
+    - cis_exceptions_enabled | default(true) | bool
+    - cis_exceptions_file is defined
+
+- name: Load exception file
+  ansible.builtin.set_fact:
+    cis_exception_data: "{{ lookup('ansible.builtin.file', cis_exceptions_file) | from_yaml }}"
+  changed_when: false
+  when:
+    - cis_exceptions_enabled | default(true) | bool
+    - cis_exceptions_file is defined
+    - cis_exception_file_stat.stat.exists | default(false)
+
+- name: Normalize exception entries
+  ansible.builtin.set_fact:
+    cis_exception_objects: "{{ cis_exception_data.exceptions | default(cis_exception_data.controls | default([])) }}"
+  changed_when: false
+  when: cis_exception_data is defined
+
+- name: Validate exception structure
+  ansible.builtin.assert:
+    that:
+      - item.id is defined
+      - item.reason is defined
+      - item.reason | string | trim | length > 0
+    fail_msg: "Exception entries require id and a non-empty reason."
+  loop: "{{ cis_exception_objects }}"
+  loop_control:
+    label: "{{ item.id | default('missing-id') }}"
+  changed_when: false
+
+- name: Validate exception control IDs
+  ansible.builtin.assert:
+    that:
+      - item.id | string in (cis_control_objects | map(attribute='data.control.id') | map('string') | list)
+    fail_msg: "Exception references unknown control ID {{ item.id }}."
+  loop: "{{ cis_exception_objects }}"
+  loop_control:
+    label: "{{ item.id }}"
+  changed_when: false
+
+- name: Attach exception metadata to selected controls
+  ansible.builtin.set_fact:
+    cis_selected_controls_with_exceptions: "{{ cis_selected_controls_with_exceptions | default([]) + [ item | combine({'exception': (_matches | first | default({}))}) ] }}"
+  vars:
+    _matches: "{{ cis_exception_objects | selectattr('id', 'equalto', item.data.control.id) | list }}"
+  loop: "{{ cis_selected_controls }}"
+  loop_control:
+    label: "{{ item.data.control.id }}"
+  changed_when: false
+
+- name: Replace selection with exception-aware controls
+  ansible.builtin.set_fact:
+    cis_selected_controls: "{{ cis_selected_controls_with_exceptions | default(cis_selected_controls) }}"
+  changed_when: false

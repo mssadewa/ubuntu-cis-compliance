@@ -1,0 +1,45 @@
+---
+- name: Load benchmark metadata and catalog
+  ansible.builtin.set_fact:
+    cis_benchmark_metadata: "{{ lookup('ansible.builtin.file', cis_benchmark_file) | from_yaml }}"
+    cis_catalog_data: "{{ lookup('ansible.builtin.file', cis_catalog_file) | from_yaml }}"
+  changed_when: false
+
+# The catalog currently contains an empty controls list. Discovering files
+# directly allows the engine to run while the catalog is being populated.
+- name: Discover control YAML files
+  ansible.builtin.set_fact:
+    cis_control_file_list: "{{ query('ansible.builtin.fileglob', cis_controls_dir ~ '/section_*/*.yml') | sort }}"
+  changed_when: false
+
+- name: Load control YAML definitions
+  ansible.builtin.set_fact:
+    cis_control_objects: "{{ cis_control_objects + [ {
+      'file': item,
+      'data': (lookup('ansible.builtin.file', item) | from_yaml)
+    } ] }}"
+  loop: "{{ cis_control_file_list }}"
+  loop_control:
+    label: "{{ item | basename }}"
+  changed_when: false
+
+- name: Require at least one control definition
+  ansible.builtin.assert:
+    that:
+      - cis_control_objects | length > 0
+    fail_msg: "No control YAML files found below {{ cis_controls_dir }}/section_*."
+  changed_when: false
+
+- name: Validate loaded control definitions
+  ansible.builtin.assert:
+    that:
+      - item.data.control is defined
+      - item.data.control.id is defined
+      - item.data.control.title is defined
+      - item.data.control.benchmark == cis_benchmark
+      - item.data.implementation.assessment is defined
+    fail_msg: "Invalid or benchmark-mismatched control file: {{ item.file }}"
+  loop: "{{ cis_control_objects }}"
+  loop_control:
+    label: "{{ item.file | basename }}"
+  changed_when: false

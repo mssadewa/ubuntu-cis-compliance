@@ -1,0 +1,102 @@
+---
+- name: Run assessment scripts for automated controls
+  ansible.builtin.shell: "{{ item.data.implementation.assessment.script }}"
+  args:
+    executable: "{{ item.data.implementation.assessment.shell | default('/bin/bash') }}"
+  loop: "{{ cis_selected_controls }}"
+  loop_control:
+    label: "{{ item.data.control.id }}"
+  register: cis_assessment_loop
+  changed_when: false
+  failed_when: false
+  when:
+    - item.exception | default({}) | length == 0
+    - item.data.implementation.assessment.mode | default('manual') == 'automated'
+    - item.data.implementation.assessment.script is defined
+    - cis_action | default('assessment') in ['assessment', 'assessment_remediation', 'remediation']
+
+- name: Run supported remediation scripts
+  ansible.builtin.shell: "{{ item.data.implementation.remediation.script }}"
+  args:
+    executable: /bin/bash
+  loop: "{{ cis_selected_controls }}"
+  loop_control:
+    label: "{{ item.data.control.id }}"
+  register: cis_remediation_loop
+  changed_when: true
+  failed_when: false
+  when:
+    - item.exception | default({}) | length == 0
+    - item.data.implementation.remediation.supported | default(false) | bool
+    - item.data.implementation.remediation.mode | default('manual') == 'automated'
+    - item.data.implementation.remediation.script is defined
+    - cis_action | default('assessment') in ['remediation', 'assessment_remediation']
+    - >-
+      cis_action | default('assessment') == 'remediation'
+      or
+      (
+        cis_assessment_loop.results | default([])
+        | selectattr('item.data.control.id', 'equalto', item.data.control.id)
+        | map(attribute='stdout') | first | default('')
+      ) is search('CIS_RESULT=FAIL')
+
+- name: Re-assess automated controls after remediation
+  ansible.builtin.shell: "{{ item.data.implementation.assessment.script }}"
+  args:
+    executable: "{{ item.data.implementation.assessment.shell | default('/bin/bash') }}"
+  loop: "{{ cis_selected_controls }}"
+  loop_control:
+    label: "{{ item.data.control.id }}"
+  register: cis_verification_loop
+  changed_when: false
+  failed_when: false
+  when:
+    - item.exception | default({}) | length == 0
+    - item.data.implementation.assessment.mode | default('manual') == 'automated'
+    - item.data.implementation.assessment.script is defined
+    - cis_action | default('assessment') in ['remediation', 'assessment_remediation']
+
+- name: Build per-control result records
+  ansible.builtin.set_fact:
+    cis_final_results: "{{ cis_final_results + [ _result ] }}"
+  vars:
+    _assessment: >-
+      {{ cis_assessment_loop.results | default([])
+         | selectattr('item.data.control.id', 'equalto', item.data.control.id)
+         | list | first | default({}) }}
+    _remediation: >-
+      {{ cis_remediation_loop.results | default([])
+         | selectattr('item.data.control.id', 'equalto', item.data.control.id)
+         | list | first | default({}) }}
+    _verification: >-
+      {{ cis_verification_loop.results | default([])
+         | selectattr('item.data.control.id', 'equalto', item.data.control.id)
+         | list | first | default({}) }}
+    _manual: "{{ item.data.implementation.assessment.mode | default('manual') != 'automated' }}"
+    _exception: "{{ item.exception | default({}) }}"
+    _effective_stdout: >-
+      {{ _verification.stdout | default(_assessment.stdout | default('')) }}
+    _result:
+      control_id: "{{ item.data.control.id | string }}"
+      title: "{{ item.data.control.title }}"
+      benchmark: "{{ item.data.control.benchmark }}"
+      benchmark_version: "{{ item.data.control.benchmark_version }}"
+      profile: "{{ cis_profile | default('level1_server') }}"
+      assessment_type: "{{ item.data.control.assessment_type }}"
+      status: >-
+        {% if _exception | length > 0 %}EXCEPTION
+        {% elif _manual %}NOT_ASSESSED
+        {% elif _effective_stdout is search('CIS_RESULT=PASS') %}PASS
+        {% elif _effective_stdout is search('CIS_RESULT=FAIL') %}FAIL
+        {% elif cis_action | default('assessment') == 'remediation' and _verification.skipped | default(false) %}NOT_ASSESSED
+        {% else %}ERROR{% endif %}
+      assessment_rc: "{{ _assessment.rc | default(none) }}"
+      assessment_stdout: "{{ _assessment.stdout | default('Manual assessment required or assessment not run.') }}"
+      remediation_rc: "{{ _remediation.rc | default(none) }}"
+      remediation_stdout: "{{ _remediation.stdout | default('Not remediated.') }}"
+      verification_stdout: "{{ _verification.stdout | default('Not verified.') }}"
+      exception_reason: "{{ _exception.reason | default('') }}"
+  loop: "{{ cis_selected_controls }}"
+  loop_control:
+    label: "{{ item.data.control.id }}"
+  changed_when: false

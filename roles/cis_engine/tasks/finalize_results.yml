@@ -1,0 +1,57 @@
+---
+- name: Calculate CIS result summary
+  ansible.builtin.set_fact:
+    cis_report_summary:
+      total: "{{ cis_final_results | length }}"
+      pass: "{{ cis_final_results | selectattr('status', 'equalto', 'PASS') | list | length }}"
+      fail: "{{ cis_final_results | selectattr('status', 'equalto', 'FAIL') | list | length }}"
+      exception: "{{ cis_final_results | selectattr('status', 'equalto', 'EXCEPTION') | list | length }}"
+      not_assessed: "{{ cis_final_results | selectattr('status', 'equalto', 'NOT_ASSESSED') | list | length }}"
+      error: "{{ cis_final_results | selectattr('status', 'equalto', 'ERROR') | list | length }}"
+  changed_when: false
+
+- name: Display CIS compliance summary
+  ansible.builtin.debug:
+    msg:
+      - "CIS compliance execution completed"
+      - "Host: {{ inventory_hostname }}"
+      - "Benchmark: {{ cis_benchmark }} / {{ cis_benchmark_version | default('') }}"
+      - "Action: {{ cis_action | default('assessment') }}"
+      - "Total: {{ cis_report_summary.total }}"
+      - "PASS: {{ cis_report_summary.pass }}"
+      - "FAIL: {{ cis_report_summary.fail }}"
+      - "EXCEPTION: {{ cis_report_summary.exception }}"
+      - "NOT_ASSESSED: {{ cis_report_summary.not_assessed }}"
+      - "ERROR: {{ cis_report_summary.error }}"
+  changed_when: false
+
+- name: Create report directory
+  ansible.builtin.file:
+    path: "{{ cis_report_dir | default('/var/log/cis-compliance') }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  when: cis_reporting_enabled | default(true) | bool
+
+- name: Write JSON compliance report
+  ansible.builtin.copy:
+    dest: "{{ cis_report_dir | default('/var/log/cis-compliance') }}/{{ cis_report_filename | default('cis_compliance_report.json') }}"
+    owner: root
+    group: root
+    mode: "0640"
+    content: "{{ {
+      'metadata': {
+        'hostname': inventory_hostname,
+        'run_started': cis_run_started | default(''),
+        'run_finished': ansible_date_time.iso8601,
+        'benchmark': cis_benchmark,
+        'benchmark_version': cis_benchmark_version | default(''),
+        'profile': cis_profile | default('level1_server'),
+        'action': cis_action | default('assessment'),
+        'selection_mode': cis_selection_mode | default('all')
+      },
+      'summary': cis_report_summary,
+      'results': cis_final_results
+    } | to_nice_json }}"
+  when: cis_reporting_enabled | default(true) | bool

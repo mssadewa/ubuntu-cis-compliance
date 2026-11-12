@@ -1,0 +1,38 @@
+---
+- name: Validate CIS engine configuration
+  ansible.builtin.assert:
+    that:
+      - cis_benchmark is defined
+      - cis_benchmark_dir is defined
+      - cis_benchmark_file is defined
+      - cis_catalog_file is defined
+      - cis_controls_dir is defined
+      - cis_selection_mode | default('all') in ['all', 'exact', 'subtree']
+      - cis_action | default('assessment') in ['assessment', 'remediation', 'assessment_remediation']
+      - cis_profile | default('level1_server') in
+        ['level1_server', 'level1_workstation', 'level2_server', 'level2_workstation']
+    fail_msg: >-
+      Invalid CIS configuration. Check benchmark paths, selection mode,
+      action, and profile in AWX or group_vars.
+  changed_when: false
+
+- name: Require target for exact or subtree selection
+  ansible.builtin.assert:
+    that:
+      - cis_target is defined
+      - cis_target | string | length > 0
+    fail_msg: "cis_target is required for exact or subtree selection."
+  when: cis_selection_mode | default('all') in ['exact', 'subtree']
+  changed_when: false
+
+- name: Initialize CIS execution data
+  ansible.builtin.set_fact:
+    cis_run_started: "{{ ansible_date_time.iso8601 }}"
+    cis_control_objects: []
+    cis_selected_controls: []
+    cis_exception_objects: []
+    cis_assessment_results: []
+    cis_remediation_results: []
+    cis_verification_results: []
+    cis_final_results: []
+  changed_when: false
